@@ -7,6 +7,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
 import {MonoMaster} from "../MonoMaster.sol";
+
 contract BaseStrategy is IStrategy, Ownable {
     using SafeERC20 for IERC20;
     MonoMaster public immutable monoMaster;
@@ -21,15 +22,15 @@ contract BaseStrategy is IStrategy, Ownable {
         depositToken = _depositToken;
         transferOwnership(address(_monoMaster));
     }
-    function pendingTokens(uint256,address,uint256) external view virtual override returns (address[] memory, uint256[] memory){
+    function pendingTokens(uint256,address,uint256) external view virtual override returns (address[] memory, uint256[] memory) {
         address[] memory _rewardTokens = new address[](1);
         _rewardTokens[0] = address(0);
         uint256[] memory _pendingAmounts = new uint256[](1);
         _pendingAmounts[0] = 0;
         return (_rewardTokens, _pendingAmounts);
-    }
-    function deposit(address,address, uint256, uint256) external virtual override onlyOwner {}
-    function withdraw(address,address to, uint256 tokenAmount, uint256, uint256 withdrawalFeeBP) external virtual override onlyOwner {
+    } 
+    function deposit(address,address,uint256,uint256) external virtual override onlyOwner {}
+    function withdraw(address,address to,uint256 tokenAmount,uint256,uint256 withdrawalFeeBP) external virtual override onlyOwner {
         if (tokenAmount > 0) {
             if (withdrawalFeeBP > 0) {
                 uint256 withdrawalFee = (tokenAmount * withdrawalFeeBP) / 10000;
@@ -39,6 +40,7 @@ contract BaseStrategy is IStrategy, Ownable {
             depositToken.safeTransfer(to, tokenAmount);
         }
     }
+
     function inCaseTokensGetStuck(IERC20 token,address to,uint256 amount) external virtual override onlyOwner {
         require(amount > 0, "cannot recover 0 tokens");
         require(address(token) != address(depositToken),"cannot recover deposit token");
@@ -53,6 +55,7 @@ contract BaseStrategy is IStrategy, Ownable {
         depositToken.safeTransfer(newStrategy, toTransfer);
     }
     function onMigration() external virtual override onlyOwner {}
+    function emergencyWithdraw(address,address to,uint256 tokenAmount,uint256,uint256) external virtual override onlyOwner {}
     function transferOwnership(address newOwner) public virtual override(Ownable, IStrategy) onlyOwner {
         Ownable.transferOwnership(newOwner);
     }

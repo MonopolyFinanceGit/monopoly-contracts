@@ -45,4 +45,12 @@ interface IStrategy {
     function transferOwnership(address newOwner) external;
 
     function setPerformanceFeeBips(uint256 newPerformanceFeeBips) external;
+
+    function emergencyWithdraw(
+        address caller,
+        address to,
+        uint256 tokenAmount,
+        uint256 shareAmount,
+        uint256 withdrawalFeeBP
+    ) external;
 }
