@@ -616,33 +616,6 @@ contract PolyMaster is Ownable {
         poolInfo[_pid].isWithdrawFee = _isWithdrawFee;
     }
 
-    //used to migrate an monopoly from using one strategy to another
-    function migrateStrategy(
-        uint256 pid,
-        IPolyStrategy newStrategy
-    ) external onlyOwner {
-        PoolInfo storage pool = poolInfo[pid];
-        //migrate funds from old strategy to new one
-        pool.strategy.migrate(address(newStrategy), pid);
-        //update strategy in storage
-        pool.strategy = newStrategy;
-        newStrategy.onMigration(pid);
-    }
-
-    //used in emergencies, or if setup of an monopoly fails
-    function setStrategy(
-        uint256 pid,
-        IPolyStrategy newStrategy,
-        bool transferOwnership,
-        address newOwner
-    ) external onlyOwner {
-        PoolInfo storage pool = poolInfo[pid];
-        if (transferOwnership) {
-            pool.strategy.transferOwnership(newOwner);
-        }
-        pool.strategy = newStrategy;
-    }
-
     function setDev(address _dev) external onlyOwner {
         require(_dev != address(0));
         emit DevSet(dev, _dev);
@@ -709,7 +682,7 @@ contract PolyMaster is Ownable {
         uint256 amount
     ) external onlyOwner {
         IPolyStrategy strat = poolInfo[pid].strategy;
-        strat.inCaseTokensGetStuck(token, to, amount);
+        strat.inCaseTokensGetStuck(token, to, amount, pid);
     }
 
     function inCaseTokenGetStuck(
@@ -760,7 +733,7 @@ contract PolyMaster is Ownable {
         require(transferSuccess, "safeEarningsTransfer: transfer failed");
     }
 
-    // 선형으로 변경
+    // Linear
     function getWithdrawFee(
         uint256 _pid,
         address _user
@@ -819,9 +792,5 @@ contract PolyMaster is Ownable {
                 emit ReferralCommissionPaid(_user, referrer, commissionAmount);
             }
         }
-    }
-
-    function _testSpolyUpdate(sPoly _sPolyToken) public onlyOwner {
-        sPolyToken = _sPolyToken;
     }
 }

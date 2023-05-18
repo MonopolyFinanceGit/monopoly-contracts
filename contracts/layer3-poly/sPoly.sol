@@ -136,8 +136,4 @@ contract sPoly is ERC20, Ownable {
                 (timeToFullClaim[user] - block.timestamp);
         }
     }
-
-    function _testSetPolyToken(address _polyToken) public onlyOwner {
-        polyToken = IERC20(_polyToken);
-    }
 }

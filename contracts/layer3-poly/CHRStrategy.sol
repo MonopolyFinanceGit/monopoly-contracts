@@ -73,7 +73,7 @@ contract CHRStrategy is Ownable, IERC721Receiver {
             depositToken: _depositToken,
             nftId: 0
         });
-
+        _depositToken.safeApprove(address(_stakingContract), 0);
         _depositToken.safeApprove(address(_stakingContract), MAX_UINT);
     }
 
@@ -218,30 +218,6 @@ contract CHRStrategy is Ownable, IERC721Receiver {
         }
     }
 
-    function migrate(
-        address newStrategy,
-        uint256 pidMonopoly
-    ) external onlyOwner {
-        StrategyInfo storage info = strategyInfo[pidMonopoly];
-        IMaGauge stakingContract = info.stakingContract;
-
-        uint256 toWithdraw = stakingContract.balanceOfToken(info.nftId);
-        if (toWithdraw > 0) {
-            stakingContract.withdrawAndHarvest(info.nftId);
-            info.depositToken.safeTransfer(newStrategy, toWithdraw);
-        }
-        uint256 rewardsToTransfer = rewardToken.balanceOf(address(this));
-        if (rewardsToTransfer > 0) {
-            rewardToken.safeTransfer(newStrategy, rewardsToTransfer);
-        }
-    }
-
-    function onMigration(uint256 pidMonopoly) external onlyOwner {
-        StrategyInfo storage info = strategyInfo[pidMonopoly];
-
-        info.nftId = info.stakingContract.depositAll();
-    }
-
     function setAllowances(uint256 pidMonopoly) external onlyOwner {
         StrategyInfo memory info = strategyInfo[pidMonopoly];
 
@@ -291,29 +267,14 @@ contract CHRStrategy is Ownable, IERC721Receiver {
     function inCaseTokensGetStuck(
         IERC20 token,
         address to,
-        uint256 amount
+        uint256 amount,
+        uint256 pidMonopoly
     ) external virtual onlyOwner {
         require(amount > 0, "cannot recover 0 tokens");
-
-        token.safeTransfer(to, amount);
-    }
-
-    function transferOwnership(
-        address newOwner
-    ) public virtual override onlyOwner {
-        Ownable.transferOwnership(newOwner);
-    }
-
-    // TODO : REMOVE WHEN PROD
-    function _testWithdraw(
-        IMaGauge _stakingContract,
-        uint256 _tokenId,
-        IERC20 _depositToken
-    ) public onlyAdmin {
-        _stakingContract.withdrawAndHarvest(_tokenId);
-        _depositToken.safeTransfer(
-            msg.sender,
-            _depositToken.balanceOf(address(this))
+        require(
+            address(token) != address(strategyInfo[pidMonopoly].depositToken),
+            "cannot recover deposit token"
         );
+        token.safeTransfer(to, amount);
     }
 }
