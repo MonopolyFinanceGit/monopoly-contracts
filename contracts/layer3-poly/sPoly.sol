@@ -104,16 +104,15 @@ contract sPoly is ERC20, Ownable {
         polyToken.safeTransfer(msg.sender, amount - amountToBurn);
     }
 
+
     function claim() public {
         uint256 amountToClaim = getClaimable(msg.sender);
 
-        if (amountToClaim == 0) {
-            return;
+        if (amountToClaim > 0) {
+            polyToken.safeTransfer(address(msg.sender), amountToClaim);
         }
 
         lastClaimedTime[msg.sender] = block.timestamp;
-
-        polyToken.safeTransfer(address(msg.sender), amountToClaim);
     }
 
     function getClaimable(address user) public view returns (uint256 amount) {
