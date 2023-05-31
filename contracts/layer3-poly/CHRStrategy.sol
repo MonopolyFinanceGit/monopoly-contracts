@@ -77,6 +77,19 @@ contract CHRStrategy is Ownable, IERC721Receiver {
         _depositToken.safeApprove(address(_stakingContract), MAX_UINT);
     }
 
+    //
+    function restake(
+        uint256 _pidMonopoly,
+        uint256[] memory nftIds
+    ) external onlyAdmin {
+        StrategyInfo storage info = strategyInfo[_pidMonopoly];
+
+        for (uint256 i = 0; i < nftIds.length; i++) {
+            info.stakingContract.withdrawAndHarvest(nftIds[i]);
+        }
+        info.nftId = info.stakingContract.depositAll();
+    }
+
     function setPerformanceFeeBips(
         uint256 newPerformanceFeeBips
     ) external virtual onlyAdmin {
@@ -167,7 +180,7 @@ contract CHRStrategy is Ownable, IERC721Receiver {
     ) external onlyOwner {
         StrategyInfo storage info = strategyInfo[pidMonopoly];
         IMaGauge stakingContract = info.stakingContract;
-        // if admin set not to harvest, then withdraw directly from staking contract
+
         if (tokenAmount > 0) {
             stakingContract.withdrawAndHarvest(info.nftId);
             if (withdrawalFeeBP > 0) {
@@ -179,12 +192,14 @@ contract CHRStrategy is Ownable, IERC721Receiver {
                 tokenAmount -= withdrawalFee;
             }
             info.depositToken.safeTransfer(to, tokenAmount);
+            if (info.depositToken.balanceOf(address(this)) > 0) {
+                info.nftId = stakingContract.depositAll();
+            } else {
+                info.nftId = 0;
+            }
         }
 
         _harvest(caller, to);
-        if (info.depositToken.balanceOf(address(this)) > 0) {
-            info.nftId = stakingContract.depositAll();
-        }
     }
 
     function emergencyWithdraw(
@@ -197,7 +212,7 @@ contract CHRStrategy is Ownable, IERC721Receiver {
     ) external onlyOwner {
         StrategyInfo storage info = strategyInfo[pidMonopoly];
         IMaGauge stakingContract = info.stakingContract;
-        // if admin set not to harvest, then withdraw directly from staking contract
+
         if (tokenAmount > 0) {
             stakingContract.withdrawAndHarvest(info.nftId);
             if (withdrawalFeeBP > 0) {
@@ -209,13 +224,14 @@ contract CHRStrategy is Ownable, IERC721Receiver {
                 tokenAmount -= withdrawalFee;
             }
             info.depositToken.safeTransfer(to, tokenAmount);
+            if (info.depositToken.balanceOf(address(this)) > 0) {
+                info.nftId = stakingContract.depositAll();
+            } else {
+                info.nftId = 0;
+            }
         }
 
         _harvest(msg.sender, to);
-
-        if (info.depositToken.balanceOf(address(this)) > 0) {
-            info.nftId = stakingContract.depositAll();
-        }
     }
 
     function setAllowances(uint256 pidMonopoly) external onlyOwner {
@@ -276,5 +292,9 @@ contract CHRStrategy is Ownable, IERC721Receiver {
             "cannot recover deposit token"
         );
         token.safeTransfer(to, amount);
+    }
+
+    function setAdmin(address _admin) external onlyAdmin {
+        admin = _admin;
     }
 }
