@@ -439,9 +439,6 @@ contract PolyMaster is Ownable {
             payReferralCommission(msg.sender, pendings);
         }
 
-        //call strategy to update
-        pool.strategy.withdraw(msg.sender, to, 0, 0, 0, pid);
-
         emit Harvest(msg.sender, pid, pendings);
     }
 
@@ -733,7 +730,7 @@ contract PolyMaster is Ownable {
         require(transferSuccess, "safeEarningsTransfer: transfer failed");
     }
 
-    // Linear
+    // 선형으로 변경
     function getWithdrawFee(
         uint256 _pid,
         address _user
@@ -792,5 +789,16 @@ contract PolyMaster is Ownable {
                 emit ReferralCommissionPaid(_user, referrer, commissionAmount);
             }
         }
+    }
+
+    function setSPoly(sPoly _sPolyToken) external onlyOwner {
+        sPolyToken = _sPolyToken;
+    }
+
+    function setStakedRewardRatio(
+        uint256 _stakedRewardRatio
+    ) external onlyOwner {
+        require(_stakedRewardRatio <= 10000, "invalid stakedRewardRatio");
+        stakedRewardRatio = _stakedRewardRatio;
     }
 }

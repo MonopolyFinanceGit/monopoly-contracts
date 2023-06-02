@@ -6,8 +6,9 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract sPoly is ERC20, Ownable {
+contract sPoly is ERC20, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     IERC20 public polyToken;
@@ -17,6 +18,8 @@ contract sPoly is ERC20, Ownable {
     uint256 public withdrawalEnabledTime;
 
     uint256 public instantWithdrawalEnabledTime;
+
+    bool public instantWithdrawalEnabled = false;
 
     uint256 public instantWithdrawalFeeRate = 5000; // 50%
 
@@ -28,8 +31,7 @@ contract sPoly is ERC20, Ownable {
 
     mapping(address => uint256) public timeToFullClaim;
 
-    constructor(address _polyToken) ERC20("sTestToken", "sTest") {
-        // constructor(address _polyToken) ERC20("Staked Poly", "sPOLY") {
+    constructor(address _polyToken) ERC20("Staked Poly", "sPOLY") {
         polyToken = IERC20(_polyToken);
     }
 
@@ -61,13 +63,19 @@ contract sPoly is ERC20, Ownable {
         instantWithdrawalEnabledTime = _instantWithdrawalEnabledTime;
     }
 
-    function stake(uint256 amount, address to) public {
+    function setInstantWithdrawalEnabled(
+        bool _instantWithdrawalEnabled
+    ) public onlyOwner {
+        instantWithdrawalEnabled = _instantWithdrawalEnabled;
+    }
+
+    function stake(uint256 amount, address to) public nonReentrant {
         polyToken.safeTransferFrom(address(msg.sender), address(this), amount);
 
         _mint(to, amount);
     }
 
-    function unstake(uint256 amount) public {
+    function unstake(uint256 amount) public nonReentrant {
         require(
             block.timestamp > withdrawalEnabledTime,
             "sPoly: withdrawal is not enabled yet"
@@ -93,6 +101,10 @@ contract sPoly is ERC20, Ownable {
             "sPoly: withdrawal is not enabled yet"
         );
         require(
+            instantWithdrawalEnabled,
+            "sPoly: instant withdrawal is not enabled"
+        );
+        require(
             block.timestamp > instantWithdrawalEnabledTime,
             "sPoly: instant withdrawal is not enabled yet"
         );
@@ -103,7 +115,6 @@ contract sPoly is ERC20, Ownable {
         polyToken.safeTransfer(instantWithdrawalFeeReceiver, amountToBurn);
         polyToken.safeTransfer(msg.sender, amount - amountToBurn);
     }
-
 
     function claim() public {
         uint256 amountToClaim = getClaimable(msg.sender);
