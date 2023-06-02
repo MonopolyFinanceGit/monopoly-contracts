@@ -9,6 +9,8 @@ interface IMaGauge {
 
     function withdrawAndHarvest(uint _tokenId) external;
 
+    function withdrawAndHarvestAll() external;
+
     function getAllReward() external;
 
     function getReward(uint _tokenId) external;

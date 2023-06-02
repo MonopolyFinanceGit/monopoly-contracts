@@ -27,12 +27,17 @@ interface IPolyStrategy {
     function inCaseTokensGetStuck(
         IERC20 token,
         address to,
-        uint256 amount
+        uint256 amount,
+        uint256 pidMonopoly
     ) external;
 
     function setAllowances(uint256 pid) external;
 
-    function revokeAllowance(address token, address spender, uint256 pid) external;
+    function revokeAllowance(
+        address token,
+        address spender,
+        uint256 pid
+    ) external;
 
     function migrate(address newStrategy, uint256 pid) external;
 
